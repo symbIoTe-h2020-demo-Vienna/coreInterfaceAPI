@@ -1,7 +1,7 @@
 package eu.h2020.symbiote;
 
-import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
-import eu.h2020.symbiote.model.Sensor;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -11,7 +11,6 @@ import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.netflix.zuul.EnableZuulProxy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.hateoas.Resources;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -20,10 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @EnableCircuitBreaker
 @EnableZuulProxy
@@ -50,14 +47,12 @@ class SearchApiGatewayRestController {
 
 	private static final String URL = "http://searchEngine/core_api/resources";
 
+	private static Log log = LogFactory.getLog(SearchApiGatewayRestController.class);
+
 	@Autowired
 	public SearchApiGatewayRestController(RestTemplate restTemplate) {
 		this.restTemplate = restTemplate;
 	}
-
-//	public Collection<String> fallback() {
-//		return new ArrayList<>();
-//	}
 
 	@RequestMapping(method = RequestMethod.GET, value = "/query")
 	public Collection<String> query(@RequestParam(value = "platform_id", required = false) String platformId,
@@ -67,6 +62,9 @@ class SearchApiGatewayRestController {
 									@RequestParam(value = "id", required = false) String id,
 									@RequestParam(value = "description", required = false) String description,
 									@RequestParam(value = "location_name", required = false) String locationName,
+									@RequestParam(value = "location_lat", required = false) Double locationLat,
+									@RequestParam(value = "location_long", required = false) Double locationLong,
+									@RequestParam(value = "max_distance", required = false) Integer maxDistance,
 									@RequestParam(value = "observed_property", required = false) String observedProperty) {
 		ParameterizedTypeReference<List<String>> ptr = new ParameterizedTypeReference<List<String>>() {
 		};
@@ -98,33 +96,28 @@ class SearchApiGatewayRestController {
 		if( locationName != null ) {
 			builder.queryParam("location_name", locationName);
 		}
+		if( locationLat != null && locationLong != null) {
+			String ptquery = "" + locationLat + "," +locationLong;
+			builder.queryParam("location_point",ptquery);
+		}
+		if( maxDistance != null ) {
+			builder.queryParam("max_distance",maxDistance);
+		}
 		if( observedProperty != null ) {
 			builder.queryParam("observed_property", observedProperty);
 		}
 		HttpEntity<?> entity = new HttpEntity<>(headers);
 
-		System.out.println( "URI is : " + builder.build().encode().toUri());
 		ResponseEntity<List<String>> exchange = this.restTemplate.exchange(
 				builder.build().encode().toUri(),
 				HttpMethod.GET,
 				entity,
 				ptr);
 
-		System.out.println(">>>>>>>>>>>>>>>>>>>>>>Got result: exchange" );
-		System.out.println( exchange.getBody());
-		System.out.println("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<" );
+		log.debug(">>>>>    Got search result: " + exchange.getBody() );
 
-//		return exchange.getBody().getContent().stream().collect(Collectors.toList());
 
 		return exchange.getBody();
-//
-//		ResponseEntity<Resources<String>> exchange = this.restTemplate.exchange("http://searchEngine/core_api/resources", HttpMethod.GET, null, ptr);
-//
-//		return exchange
-//				.getBody()
-//				.getContent()
-//				.stream()
-//				.collect(Collectors.toList());
 	}
 
 }
