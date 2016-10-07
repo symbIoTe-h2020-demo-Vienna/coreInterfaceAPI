@@ -16,8 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 @EnableCircuitBreaker
@@ -55,7 +53,7 @@ class SearchApiGatewayRestController {
 		this.restTemplate = restTemplate;
 	}
 
-	@RequestMapping(method = RequestMethod.GET, value = "/resource_url")
+	@RequestMapping(method = RequestMethod.GET, value = "/resource_url", produces = MediaType.APPLICATION_JSON_VALUE)
 	public Map<String,String> requestAccessUrl(@RequestParam(value = "resourceIdArray") String[] resourceIds ) {
 
 		ParameterizedTypeReference<Map<String,String>> ptr = new ParameterizedTypeReference<Map<String,String>>() {
@@ -88,8 +86,8 @@ class SearchApiGatewayRestController {
 		return exchange.getBody();
 	}
 
-	@RequestMapping(method = RequestMethod.GET, value = "/query")
-	public Collection<String> query(@RequestParam(value = "platform_id", required = false) String platformId,
+	@RequestMapping(method = RequestMethod.GET, value = "/query", produces = MediaType.APPLICATION_JSON_VALUE)
+	public String query(@RequestParam(value = "platform_id", required = false) String platformId,
 									@RequestParam(value = "platform_name", required = false) String platformName,
 									@RequestParam(value = "owner", required = false) String owner,
 									@RequestParam(value = "name", required = false) String name,
@@ -100,9 +98,8 @@ class SearchApiGatewayRestController {
 									@RequestParam(value = "location_long", required = false) Double locationLong,
 									@RequestParam(value = "max_distance", required = false) Integer maxDistance,
 									@RequestParam(value = "observed_property", required = false) String observedProperty) {
-		ParameterizedTypeReference<List<String>> ptr = new ParameterizedTypeReference<List<String>>() {
+		ParameterizedTypeReference<String> ptr = new ParameterizedTypeReference<String>() {
 		};
-
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("Accept", MediaType.APPLICATION_JSON_VALUE);
@@ -142,14 +139,13 @@ class SearchApiGatewayRestController {
 		}
 		HttpEntity<?> entity = new HttpEntity<>(headers);
 
-		ResponseEntity<List<String>> exchange = this.restTemplate.exchange(
+		ResponseEntity<String> exchange = this.restTemplate.exchange(
 				builder.build().encode().toUri(),
 				HttpMethod.GET,
 				entity,
 				ptr);
 
 		log.debug(">>>>>    Got search result: " + exchange.getBody() );
-
 
 		return exchange.getBody();
 	}
