@@ -12,15 +12,13 @@ import org.springframework.cloud.netflix.zuul.EnableZuulProxy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 @EnableCircuitBreaker
 @EnableZuulProxy
@@ -39,19 +37,55 @@ public class CoreInterfaceApiApplication {
 	}
 }
 
+@CrossOrigin
 @RestController
 @RequestMapping("/search")
 class SearchApiGatewayRestController {
 
 	private final RestTemplate restTemplate;
 
-	private static final String URL = "http://searchEngine/core_api/resources";
+	private static final String SEARCH_URL = "http://searchEngine/core_api/resources";
+
+	private static final String RESOURCEFINDER_URL = "http://coreResourceAccessMonitor/cram_api/resource_urls";
 
 	private static Log log = LogFactory.getLog(SearchApiGatewayRestController.class);
 
 	@Autowired
 	public SearchApiGatewayRestController(RestTemplate restTemplate) {
 		this.restTemplate = restTemplate;
+	}
+
+	@RequestMapping(method = RequestMethod.GET, value = "/resource_url")
+	public Map<String,String> requestAccessUrl(@RequestParam(value = "resourceIdArray") String[] resourceIds ) {
+
+		ParameterizedTypeReference<Map<String,String>> ptr = new ParameterizedTypeReference<Map<String,String>>() {
+		};
+
+		System.out.println("Handling resource url endpoint");
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("Accept", MediaType.TEXT_PLAIN_VALUE);
+
+		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(RESOURCEFINDER_URL);
+		StringBuilder sb = new StringBuilder();
+		for( int i = 0; i< resourceIds.length; i++ ) {
+			sb.append(resourceIds[i]);
+			if( i + 1 < resourceIds.length ) {
+				sb.append(",");
+			}
+		}
+		builder.path("/"+sb.toString());
+		HttpEntity<?> entity = new HttpEntity<>(headers);
+
+		ResponseEntity<Map<String,String>> exchange = this.restTemplate.exchange(
+				builder.build().encode().toUri(),
+				HttpMethod.GET,
+				entity,
+				ptr);
+
+		System.out.println(exchange.getBody());
+
+		return exchange.getBody();
 	}
 
 	@RequestMapping(method = RequestMethod.GET, value = "/query")
@@ -73,7 +107,7 @@ class SearchApiGatewayRestController {
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("Accept", MediaType.APPLICATION_JSON_VALUE);
 
-		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(URL);
+		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(SEARCH_URL);
 
 		if( platformId != null ) {
 			builder.queryParam("platform_id", platformId);
