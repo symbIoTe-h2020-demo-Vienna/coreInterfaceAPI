@@ -1,7 +1,10 @@
 package eu.h2020.symbiote;
 
+import com.google.gson.Gson;
+import eu.h2020.symbiote.model.ResourceUrlQueryModel;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.http.entity.StringEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Map;
 
 @EnableCircuitBreaker
@@ -54,30 +58,33 @@ class SearchApiGatewayRestController {
 	}
 
 	@RequestMapping(method = RequestMethod.GET, value = "/resource_url", produces = MediaType.APPLICATION_JSON_VALUE)
-	public Map<String,String> requestAccessUrl(@RequestParam(value = "resourceIdArray") String[] resourceIds ) {
+	public Map<String,String> requestAccessUrl(@RequestParam(value = "resourceIds") String[] resourceIds ) {
 
 		ParameterizedTypeReference<Map<String,String>> ptr = new ParameterizedTypeReference<Map<String,String>>() {
 		};
 
 		System.out.println("Handling resource url endpoint");
 
-		HttpHeaders headers = new HttpHeaders();
-		headers.set("Accept", MediaType.TEXT_PLAIN_VALUE);
+		ResourceUrlQueryModel model = new ResourceUrlQueryModel(resourceIds);
+		Gson gson = new Gson();
+		String jsoned = gson.toJson(model);
 
-		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(RESOURCEFINDER_URL);
-		StringBuilder sb = new StringBuilder();
-		for( int i = 0; i< resourceIds.length; i++ ) {
-			sb.append(resourceIds[i]);
-			if( i + 1 < resourceIds.length ) {
-				sb.append(",");
-			}
-		}
-		builder.path("/"+sb.toString());
-		HttpEntity<?> entity = new HttpEntity<>(headers);
+//		StringEntity input = null;
+//		try {
+//			input = new StringEntity(jsoned);
+//			input.setContentType("application/json");
+//		} catch (UnsupportedEncodingException e) {
+//			e.printStackTrace();
+//		}
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.set("Accept", MediaType.APPLICATION_JSON_VALUE);
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		HttpEntity<String> entity = new HttpEntity<>(jsoned,headers);
 
 		ResponseEntity<Map<String,String>> exchange = this.restTemplate.exchange(
-				builder.build().encode().toUri(),
-				HttpMethod.GET,
+				RESOURCEFINDER_URL,
+				HttpMethod.POST,
 				entity,
 				ptr);
 
