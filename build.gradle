@@ -1,0 +1,96 @@
+buildscript {
+    ext {
+        springBootVersion = '1.4.1.RELEASE'
+    }
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        //classpath "io.spring.gradle:dependency-management-plugin:0.5.2.RELEASE"
+        //classpath 'org.junit.platform:junit-platform-gradle-plugin:1.0.0-M2'
+    }
+}
+
+ext.junitJupiterVersion = '5.0.0-M2'
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+apply plugin: 'spring-boot'
+apply plugin: 'jacoco'
+//apply plugin: "io.spring.dependency-management"
+
+//apply plugin: 'org.junit.platform.gradle.plugin'
+
+
+jar {
+    baseName = 'coreInterfaceAPI'
+    version =  '0.0.1'
+}
+
+repositories {
+    mavenCentral()
+    maven { 
+        url "https://jitpack.io" 
+    }
+    maven {
+        url 'https://repo.spring.io/libs-snapshot'
+    }
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+dependencies {
+    compile('org.springframework.cloud:spring-cloud-starter-config')
+    compile('org.springframework.cloud:spring-cloud-starter-eureka')
+    compile('org.springframework.cloud:spring-cloud-starter-hystrix')
+    compile('org.springframework.cloud:spring-cloud-starter-zuul')
+    compile('org.springframework.cloud:spring-cloud-starter-zipkin') // Causes the java.net.ConnectException
+    compile('org.springframework.cloud:spring-cloud-starter-stream-rabbit')
+    compile('org.springframework.boot:spring-boot-starter-data-rest')
+    compile('org.springframework.boot:spring-boot-starter-web')
+    compile('org.springframework.boot:spring-boot-starter-hateoas')
+    compile('org.springframework.boot:spring-boot-starter-data-mongodb')
+    compile('com.google.code.gson:gson:2.7')
+    compile('com.google.guava:guava:19.+')
+    compile('com.github.symbiote-h2020:mediationFramework:b2a4829d3f')
+    compile('com.googlecode.json-simple:json-simple:1.1.1')
+
+    //compile('org.springframework.cloud:spring-cloud-starter-sleuth')
+    //compile('org.springframework.cloud:spring-cloud-sleuth-stream')
+    //compile('org.springframework.cloud:spring-cloud-sleuth-zipkin')
+    //compile('org.springframework.boot:spring-boot-starter-hateoas')
+
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+
+    // JUnit Jupiter API and TestEngine implementation
+    //testCompile("org.junit.jupiter:junit-jupiter-api:${junitJupiterVersion}")
+    //testRuntime("org.junit.jupiter:junit-jupiter-engine:${junitJupiterVersion}")
+
+    // Use JUnit4
+    testCompile 'junit:junit:4.12'
+}
+
+dependencyManagement {
+    imports {
+        //mavenBom "org.springframework.cloud:spring-cloud-dependencies:Brixton.SR5"
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:Camden.RELEASE"
+        mavenBom 'org.springframework.cloud:spring-cloud-sleuth:1.1.0.BUILD-SNAPSHOT'
+    }
+}
+
+jacoco {
+    toolVersion = "0.7.7.201606060606"
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled = true
+        html.enabled = true
+    }
+}
+
+check.dependsOn jacocoTestReport
+
